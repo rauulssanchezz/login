@@ -12,13 +12,13 @@ router = APIRouter(
 @router.post('/signup')
 async def signup_user(user: AppUserModel, db: DB_DEPENDENCY):
     try:
-        await AuthService.signup_user(user=user, db=db)
+        return await AuthService.signup_user(user=user, db=db)
     except ValueError as e:
           return {'error': str(e)}
     
 @router.post('/login')
 async def login(user: AppUserModel, db: DB_DEPENDENCY):
     try:
-        await AuthService.login(user=user, db=db)
+        return await AuthService.login(user=user, db=db)
     except ValueError as e:
           return {'error': str(e)}
