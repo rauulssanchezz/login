@@ -1,14 +1,7 @@
-from pydantic import BaseModel, EmailStr, field_validator
-from passlib.context import CryptContext
-
-pwd_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
+from typing import Optional
+from pydantic import BaseModel, EmailStr
 
 class AppUserModel(BaseModel):
-    name: str
+    name: Optional[str] = None
     email: EmailStr
     password: str
-
-@field_validator('password')
-@classmethod
-def hash_password(cls, v):
-    return pwd_context.hash(v)
