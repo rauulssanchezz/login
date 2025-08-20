@@ -3,7 +3,7 @@ from passlib.context import CryptContext
 
 pwd_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
 
-class UserModel(BaseModel):
+class AppUserModel(BaseModel):
     name: str
     email: EmailStr
     password: str
