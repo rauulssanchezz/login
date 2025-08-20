@@ -1,11 +1,15 @@
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select
 from app.database import DB_DEPENDENCY
-from app.models.app_user_model import AppUserModel, pwd_context
+from app.models.app_user_model import AppUserModel
 from app.schemas.app_user_schema import AppUserSchema
 from jose import jwt
 from dotenv import load_dotenv
 import os
 from datetime import datetime, timedelta
+from passlib.context import CryptContext
+
+pwd_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
 
 load_dotenv()
 
@@ -17,32 +21,41 @@ class AuthService:
 
     @staticmethod
     async def signup_user(user: AppUserModel, db: DB_DEPENDENCY):
-        new_user = AppUserSchema(
-            name = user.name,
-            email = user.email,
-            password = user.password
-        )
+        try:
+            new_user = AppUserSchema(
+                name = user.name,
+                email = user.email,
+                password = pwd_context.hash(user.password)
+            )
 
-        db.add(new_user)
-        await db.commit()
+            db.add(new_user)
+            await db.commit()
+
+            return {'success': 'Usuario creado con exito.'}
+        except IntegrityError:
+            raise ValueError('Ya existe un usuario con ese email.')
+        except Exception as e:
+            raise ValueError(str(e))
 
     @staticmethod
     async def login(user: AppUserModel, db: DB_DEPENDENCY):
-        result = await db.execute(
+        try:
+            result = await db.execute(
             select(AppUserSchema).where(AppUserSchema.email == user.email)
-        )
+            )
 
-        user_log = result.scalars().first()
+            user_log = result.scalars().first()
 
-        if not pwd_context.verify(user.password, user_log.password): # type: ignore
-            raise ValueError('Las contraseñas no coinciden.')
-        
-        expire = datetime.now() + timedelta(minutes=access_token_expire_minutes)
-        payload = {
-            "sub": user_log.id, # type: ignore
-            "exp": expire
-        }
-        token = jwt.encode(payload, secret_key, algorithm=algorithm)
+            if not pwd_context.verify(user.password, user_log.password): # type: ignore
+                raise ValueError('Las contraseñas no coinciden.')
+            
+            expire = datetime.now() + timedelta(minutes=access_token_expire_minutes)
+            payload = {
+                "sub": str(user_log.id), # type: ignore
+                "exp": expire
+            }
+            token = jwt.encode(payload, secret_key, algorithm=algorithm)
 
-        return {'access_token': token, 'token_type': 'bearer', 'user_data': user_log}
-        
+            return {'access_token': token, 'token_type': 'bearer', 'user_data': user_log}
+        except Exception as e:
+            raise ValueError(str(e))    
