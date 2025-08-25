@@ -18,6 +18,19 @@ algorithm = str(os.getenv('ALGORITHM'))
 access_token_expire_minutes = int(str(os.getenv('ACCESS_TOKEN_EXPIRE_MINUTES')))
 
 class AuthService:
+    @staticmethod
+    async def verify_token(token: str):
+        try:
+            payload = jwt.decode(token, secret_key, algorithms=[algorithm])
+            user_id = payload.get("sub")
+
+            if user_id is None:
+                raise ValueError("Token inválido: no contiene sub.")
+            
+            return {"valid": True, "user_id": user_id}
+        
+        except Exception as e:
+            return {"valid": False, "error": str(e)}
 
     @staticmethod
     async def signup_user(user: AppUserModel, db: DB_DEPENDENCY):
